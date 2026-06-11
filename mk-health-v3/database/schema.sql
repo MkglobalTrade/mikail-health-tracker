@@ -1,0 +1,2 @@
+-- Database schema for mk-health-v3
+-- Create tables for profiles, labs, medications, doctors, appointments, glucose readings, weight logs, blood pressure logs, goals, reports, notifications

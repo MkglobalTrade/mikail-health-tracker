@@ -1,0 +1,17 @@
+html {
+  min-height: 100%;
+  background: #f8fafc;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, system-ui, sans-serif;
+  background: #f8fafc;
+  color: #111827;
+}
+
+a { color: inherit; text-decoration: none; }
+.page-shell { padding: 2rem; max-width: 1200px; margin: 0 auto; }
+.hero { background: white; padding: 2rem; border-radius: 24px; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08); }
+.hero-links { display: flex; gap: 1rem; margin-top: 1.5rem; }
+.hero-links a { padding: 0.75rem 1.25rem; background: #2563eb; color: white; border-radius: 12px; }

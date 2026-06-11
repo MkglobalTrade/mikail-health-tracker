@@ -1,0 +1,1 @@
+-- Row-level security policies for Supabase
