@@ -6,7 +6,6 @@ import React, { useState } from 'react';
 // COMPONENTE: MedicationSchedule (Inline)
 // ==========================================
 function MedicationSchedule() {
-  // Datos de prueba locales (Próximamente conectados a tu esquema de Supabase)
   const [medicaciones, setMedicaciones] = useState([
     { id: 1, nombre: 'Metformina', dosis: '850mg', hora: '08:00 AM', tomado: true, tipo: 'Pastilla' },
     { id: 2, nombre: 'Omega 3', dosis: '1000mg', hora: '01:00 PM', tomado: false, tipo: 'Cápsula' },
@@ -23,7 +22,6 @@ function MedicationSchedule() {
 
   return (
     <div className="w-full bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm overflow-hidden transition-colors">
-      {/* Cabecera de la tarjeta */}
       <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-zinc-800 flex justify-between items-center bg-slate-50/50 dark:bg-zinc-900/50">
         <div>
           <h2 className="font-semibold text-slate-800 dark:text-zinc-200 text-base md:text-lg">
@@ -42,7 +40,6 @@ function MedicationSchedule() {
         </span>
       </div>
       
-      {/* Lista de Medicamentos */}
       <div className="divide-y divide-slate-100 dark:divide-zinc-800">
         {medicaciones.map((med) => (
           <div 
@@ -50,12 +47,10 @@ function MedicationSchedule() {
             className="p-4 sm:p-5 flex items-center justify-between hover:bg-slate-50/30 dark:hover:bg-zinc-900/20 transition-colors gap-4"
           >
             <div className="flex items-center gap-3 min-w-0">
-              {/* Indicador de estado */}
               <div className={`w-3 h-3 rounded-full shrink-0 shadow-sm transition-all duration-300 ${
-                med.tomado ? 'bg-emerald-500 scale-110' : 'bg-amber-500 pulse'
+                med.tomado ? 'bg-emerald-500 scale-110' : 'bg-amber-500'
               }`} />
               
-              {/* Información del Medicamento */}
               <div className="truncate">
                 <p className={`font-semibold text-sm sm:text-base text-slate-700 dark:text-zinc-300 truncate ${
                   med.tomado ? 'line-through text-slate-400 dark:text-zinc-500 font-normal' : ''
@@ -71,7 +66,6 @@ function MedicationSchedule() {
               </div>
             </div>
             
-            {/* Botón de Acción Táctil (Optimizado para móvil) */}
             <button 
               onClick={() => toggleTomado(med.id)}
               className={`text-xs font-medium px-4 py-2 rounded-xl border transition-all shrink-0 active:scale-95 select-none ${
@@ -96,7 +90,6 @@ export default function MedicationsPage() {
   return (
     <div className="w-full min-h-screen p-4 sm:p-6 md:p-8 bg-slate-50 dark:bg-zinc-950 transition-colors">
       <div className="w-full max-w-2xl mx-auto">
-        {/* Encabezado */}
         <header className="mb-6 sm:mb-8">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xl sm:text-2xl">💊</span>
@@ -109,7 +102,6 @@ export default function MedicationsPage() {
           </p>
         </header>
         
-        {/* Contenido Principal */}
         <main className="w-full">
           <MedicationSchedule />
         </main>
