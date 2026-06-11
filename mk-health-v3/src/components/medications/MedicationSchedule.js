@@ -1,5 +1,3 @@
 export default function MedicationSchedule() {
-  return (
-    <div>MedicationSchedule component placeholder</div>
-  );
+  return <div>MedicationSchedule component placeholder</div>;
 }

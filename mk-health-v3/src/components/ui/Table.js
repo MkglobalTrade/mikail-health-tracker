@@ -1,5 +1,3 @@
 export default function Table() {
-  return (
-    <div>Table component placeholder</div>
-  );
+  return <div>Table component placeholder</div>;
 }

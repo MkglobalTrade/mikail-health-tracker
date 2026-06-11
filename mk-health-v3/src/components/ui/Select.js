@@ -1,5 +1,3 @@
 export default function Select() {
-  return (
-    <div>Select component placeholder</div>
-  );
+  return <div>Select component placeholder</div>;
 }

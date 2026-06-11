@@ -1,5 +1,3 @@
 export default function MedicationCard() {
-  return (
-    <div>MedicationCard component placeholder</div>
-  );
+  return <div>MedicationCard component placeholder</div>;
 }

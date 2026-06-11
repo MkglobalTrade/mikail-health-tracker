@@ -1,5 +1,3 @@
 export default function LabCard() {
-  return (
-    <div>LabCard component placeholder</div>
-  );
+  return <div>LabCard component placeholder</div>;
 }

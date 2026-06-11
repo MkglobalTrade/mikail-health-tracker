@@ -1,5 +1,3 @@
 export default function Card() {
-  return (
-    <div>Card component placeholder</div>
-  );
+  return <div>Card component placeholder</div>;
 }

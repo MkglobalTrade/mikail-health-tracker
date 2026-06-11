@@ -1,5 +1,3 @@
 export default function Loading() {
-  return (
-    <div>Loading component placeholder</div>
-  );
+  return <div>Loading component placeholder</div>;
 }

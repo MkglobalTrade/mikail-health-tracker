@@ -1,5 +1,3 @@
 export default function BloodPressureChart() {
-  return (
-    <div>BloodPressureChart component placeholder</div>
-  );
+  return <div>BloodPressureChart component placeholder</div>;
 }

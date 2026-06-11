@@ -1,5 +1,3 @@
 export default function UpcomingAppointments() {
-  return (
-    <div>UpcomingAppointments component placeholder</div>
-  );
+  return <div>UpcomingAppointments component placeholder</div>;
 }

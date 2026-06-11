@@ -1,5 +1,3 @@
 export default function LabHistory() {
-  return (
-    <div>LabHistory component placeholder</div>
-  );
+  return <div>LabHistory component placeholder</div>;
 }

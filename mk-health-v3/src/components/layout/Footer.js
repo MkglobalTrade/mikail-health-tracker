@@ -1,5 +1,3 @@
 export default function Footer() {
-  return (
-    <div>Footer component placeholder</div>
-  );
+  return <div>Footer component placeholder</div>;
 }

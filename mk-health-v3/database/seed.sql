@@ -1,1 +1,2 @@
--- seed.sql placeholder for mk-health-v3
+-- mk-health-v3 seed data
+-- Add your initial seed data here.

@@ -1,5 +1,3 @@
 export default function CholesterolChart() {
-  return (
-    <div>CholesterolChart component placeholder</div>
-  );
+  return <div>CholesterolChart component placeholder</div>;
 }

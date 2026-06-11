@@ -1,5 +1,3 @@
 export default function RiskAnalysis() {
-  return (
-    <div>RiskAnalysis component placeholder</div>
-  );
+  return <div>RiskAnalysis component placeholder</div>;
 }

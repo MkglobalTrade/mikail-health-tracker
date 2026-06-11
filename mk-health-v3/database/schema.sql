@@ -1,1 +1,2 @@
--- schema.sql placeholder for mk-health-v3
+-- mk-health-v3 database schema
+-- Add your Supabase table definitions here.

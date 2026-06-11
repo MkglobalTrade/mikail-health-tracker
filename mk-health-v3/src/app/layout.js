@@ -2,7 +2,7 @@ import './globals.css';
 
 export const metadata = {
   title: 'MK Health v3',
-  description: 'Professional health tracker scaffold with AI, Supabase, and analytics.',
+  description: 'Health tracking app scaffold with labs, glucose, medications, doctors, and AI insights.',
 };
 
 export default function RootLayout({ children }) {

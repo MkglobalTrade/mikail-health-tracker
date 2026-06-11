@@ -1,1 +1,2 @@
--- policies.sql placeholder for mk-health-v3
+-- mk-health-v3 RLS policies
+-- Add your Supabase policy definitions here.

@@ -1,5 +1,3 @@
 export default function AppointmentCard() {
-  return (
-    <div>AppointmentCard component placeholder</div>
-  );
+  return <div>AppointmentCard component placeholder</div>;
 }

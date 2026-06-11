@@ -1,5 +1,3 @@
 export default function QuickActions() {
-  return (
-    <div>QuickActions component placeholder</div>
-  );
+  return <div>QuickActions component placeholder</div>;
 }

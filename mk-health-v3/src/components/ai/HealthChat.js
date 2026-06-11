@@ -1,5 +1,3 @@
 export default function HealthChat() {
-  return (
-    <div>HealthChat component placeholder</div>
-  );
+  return <div>HealthChat component placeholder</div>;
 }

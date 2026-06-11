@@ -1,5 +1,3 @@
 export default function Tabs() {
-  return (
-    <div>Tabs component placeholder</div>
-  );
+  return <div>Tabs component placeholder</div>;
 }

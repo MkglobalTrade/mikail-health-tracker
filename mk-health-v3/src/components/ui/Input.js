@@ -1,5 +1,3 @@
 export default function Input() {
-  return (
-    <div>Input component placeholder</div>
-  );
+  return <div>Input component placeholder</div>;
 }

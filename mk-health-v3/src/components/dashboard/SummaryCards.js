@@ -1,5 +1,3 @@
 export default function SummaryCards() {
-  return (
-    <div>SummaryCards component placeholder</div>
-  );
+  return <div>SummaryCards component placeholder</div>;
 }

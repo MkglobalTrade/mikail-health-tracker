@@ -4,7 +4,7 @@ const HealthContext = createContext(null);
 
 export function HealthContextProvider({ children }) {
   const [state, setState] = useState(null);
-  return <HealthContext.Provider value={ state, setState }>{children}</HealthContext.Provider>;
+  return <HealthContext.Provider value={{ healthData, setHealthData }}>{children}</HealthContext.Provider>;
 }
 
 export function useHealthContext() {

@@ -1,5 +1,3 @@
 export default function GlucoseChart() {
-  return (
-    <div>GlucoseChart component placeholder</div>
-  );
+  return <div>GlucoseChart component placeholder</div>;
 }

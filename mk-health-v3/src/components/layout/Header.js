@@ -1,5 +1,3 @@
 export default function Header() {
-  return (
-    <div>Header component placeholder</div>
-  );
+  return <div>Header component placeholder</div>;
 }
