@@ -1,6 +1,6 @@
 {
   "name": "mikail-health-tracker",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -10,6 +10,10 @@
   "dependencies": {
     "next": "14.2.3",
     "react": "^18",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "pdf-parse": "^1.1.1",
+    "mammoth": "^1.7.1",
+    "xlsx": "^0.18.5",
+    "anthropic": "^0.27.0"
   }
 }
