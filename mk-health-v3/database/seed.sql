@@ -1,1 +1,1 @@
--- Seed data for mk-health-v3
+-- seed.sql placeholder for mk-health-v3

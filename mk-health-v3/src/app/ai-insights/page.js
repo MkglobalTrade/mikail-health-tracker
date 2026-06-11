@@ -1,8 +1,10 @@
-export default function AiinsightsPage() {
+export default function AIInsightsPage() {
   return (
-    <section className="page-shell">
-      <h1>Ai Insights</h1>
-      <p>Placeholder page for the Ai Insights section of mk-health-v3.</p>
-    </section>
+    <main className="min-h-screen bg-slate-50 px-6 py-10">
+      <section className="mx-auto max-w-5xl rounded-3xl bg-white p-10 shadow-lg">
+        <h1 className="text-4xl font-semibold text-slate-950">AI Insights</h1>
+        <p className="mt-4 text-slate-600">Placeholder page for the AI Insights experience.</p>
+      </section>
+    </main>
   );
 }
