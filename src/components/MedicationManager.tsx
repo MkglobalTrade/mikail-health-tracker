@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Medication } from '@/types/health';
 
 export default function MedicationManager() {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [meds] = useState<Medication[]>([
     {
       id: '1',

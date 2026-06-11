@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { HealthProfile } from '@/types/health';
 
 export default function Dashboard() {
-  const [profile, setProfile] = useState<HealthProfile>({
+  const [profile] = useState<HealthProfile>({
     surgeries: ['Apendicectomía (2018)'],
     vaccines: ['Influenza (2025)', 'Tétanos (2022)'],
     allergies: ['Penicilina'],
@@ -12,7 +12,6 @@ export default function Dashboard() {
     documents: []
   });
 
-  const [searchQuery, setSearchQuery] = useState('');
   const [chatInput, setChatInput] = useState('');
   const [chatLog, setChatLog] = useState<{role: string, text: string}[]>([]);
 

@@ -2,6 +2,7 @@
 import { useState } from 'react';
 
 export default function GlucoseCharts() {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly' | '90day'>('daily');
 
   // Métricas simuladas de Stelo

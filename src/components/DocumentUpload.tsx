@@ -5,6 +5,7 @@ export default function DocumentUpload() {
   const [uploading, setUploading] = useState(false);
   const [extractedData, setExtractedData] = useState<string | null>(null);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
