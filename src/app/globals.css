@@ -1,23 +1,17 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-html { background: #060810; }
-
+html { background: #f5f6fa; }
 body {
-  background: #060810;
-  color: #e8ecf4;
+  background: #f5f6fa;
+  color: #1a1d2e;
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
   max-width: 430px;
   margin: 0 auto;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
-
 input, textarea, button, select { font-family: inherit; }
 input[type=number]::-webkit-inner-spin-button { opacity: 1; }
 ::-webkit-scrollbar { display: none; }
 * { -webkit-tap-highlight-color: transparent; }
-
-/* Smooth transitions */
 button { transition: opacity .15s, transform .1s; }
 button:active { transform: scale(.97); opacity: .85; }
