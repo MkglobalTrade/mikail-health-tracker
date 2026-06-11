@@ -1,18 +1,13 @@
-import Anthropic from '@anthropic-ai/sdk'
-
-export const runtime = 'nodejs'
+export const runtime = 'edge'
 export const maxDuration = 60
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+const SYSTEM_PROMPT = `Eres un experto médico especializado en diabetes, nefrología y cardiología.
+Recibirás texto o imagen de resultados de laboratorio médicos.
+Extrae TODOS los valores numéricos y retorna SOLO un JSON válido sin texto adicional.
 
-const SYSTEM_PROMPT = `Eres un experto médico especializado en diabetes, nefrología y cardiología/lípidos.
-Recibirás texto extraído de resultados de laboratorio médicos.
-Tu trabajo es extraer TODOS los valores numéricos de laboratorio y retornar SOLO un JSON válido.
-
-El JSON debe tener exactamente esta estructura:
+Estructura exacta:
 {
-  "date": "YYYY-MM-DD o null si no se encuentra",
-  "patient": "nombre del paciente o null",
+  "date": "YYYY-MM-DD o null",
   "values": {
     "hba1c": número o null,
     "glucose": número o null,
@@ -25,96 +20,74 @@ El JSON debe tener exactamente esta estructura:
     "cholesterol": número o null,
     "uric_acid": número o null,
     "wbc": número o null,
-    "rbc": número o null,
     "hemoglobin": número o null,
-    "hematocrit": número o null,
     "platelets": número o null,
     "sodium": número o null,
     "potassium": número o null,
-    "glucose_fasting": número o null,
-    "glucose_peak": número o null,
-    "glucose_avg": número o null,
-    "time_in_range": número o null,
-    "bun": número o null,
-    "albumin": número o null,
     "alt": número o null,
     "ast": número o null,
-    "vitamin_d": número o null,
+    "albumin": número o null,
     "tsh": número o null,
-    "ferritin": número o null
+    "vitamin_d": número o null,
+    "ferritin": número o null,
+    "bun": número o null
   },
-  "raw_findings": ["lista de strings con los hallazgos importantes en español"],
-  "alerts": ["lista de strings con alertas críticas en español"],
-  "summary": "resumen de 2-3 oraciones en español"
+  "alerts": ["alertas críticas en español"],
+  "summary": "resumen 2-3 oraciones en español"
 }
 
-IMPORTANTE: 
-- Retorna SOLO el JSON, sin texto adicional, sin markdown, sin explicaciones
-- Si un valor no está presente en el documento, ponlo como null
-- Para HbA1c >14%, usa el valor 14.1
-- Para Glucosa >1000, usa 1001
-- Para ACR, busca también "microalbumin/creatinine ratio", "albumin creatinine ratio"
-- Detecta el idioma del documento (albanés, inglés, español) y extrae igualmente`
+Reglas:
+- SOLO JSON, sin markdown ni explicaciones
+- HbA1c >14% → usar 14.1
+- Glucosa >1000 → usar 1001
+- Detecta albanés, inglés o español automáticamente
+- null si el valor no aparece en el documento`
 
 export async function POST(request) {
   try {
-    const formData = await request.formData()
-    const file = formData.get('file')
-    const fileType = formData.get('fileType')
-    const extractedText = formData.get('extractedText')
+    const { imageData, imageMime, extractedText } = await request.json()
 
-    let textContent = extractedText || ''
+    const apiKey = process.env.ANTHROPIC_API_KEY
+    if (!apiKey) throw new Error('API key no configurada')
 
-    // If image/PDF sent as base64
-    const imageData = formData.get('imageData')
-    const imageMime = formData.get('imageMime')
-
-    let messages = []
+    let content = []
 
     if (imageData && imageMime) {
-      // Send image directly to Claude Vision
-      messages = [{
-        role: 'user',
-        content: [
-          {
-            type: 'image',
-            source: {
-              type: 'base64',
-              media_type: imageMime,
-              data: imageData,
-            }
-          },
-          {
-            type: 'text',
-            text: 'Extrae todos los valores de laboratorio de esta imagen médica y retorna el JSON según las instrucciones.'
-          }
-        ]
-      }]
+      content = [
+        {
+          type: 'image',
+          source: { type: 'base64', media_type: imageMime, data: imageData }
+        },
+        { type: 'text', text: 'Extrae todos los valores de laboratorio de esta imagen y retorna el JSON.' }
+      ]
     } else {
-      // Send extracted text
-      messages = [{
-        role: 'user',
-        content: `Extrae todos los valores de laboratorio del siguiente texto y retorna el JSON:\n\n${textContent}`
-      }]
+      content = [{ type: 'text', text: `Extrae valores de laboratorio:\n\n${extractedText}` }]
     }
 
-    const response = await client.messages.create({
-      model: 'claude-opus-4-6',
-      max_tokens: 2000,
-      system: SYSTEM_PROMPT,
-      messages,
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-6',
+        max_tokens: 2000,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: 'user', content }],
+      }),
     })
 
-    const rawText = response.content[0].text.trim()
-    
-    // Clean up in case Claude adds markdown
-    const jsonStr = rawText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-    const parsed = JSON.parse(jsonStr)
+    const data = await response.json()
+    if (!response.ok) throw new Error(data.error?.message || 'Error Anthropic API')
+
+    const raw = data.content[0].text.trim().replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+    const parsed = JSON.parse(raw)
 
     return Response.json({ success: true, data: parsed })
 
   } catch (error) {
-    console.error('Analysis error:', error)
     return Response.json({ success: false, error: error.message }, { status: 500 })
   }
 }
