@@ -1,10 +1,10 @@
-import MedicationsSchedule from '@/components/MedicationsSchedule';
+import DoctorsList from '@/components/DoctorsList';
 
-export default function MedicationsPage() {
+export default function DoctorsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
       <div className="max-w-6xl mx-auto">
-        <MedicationsSchedule />
+        <DoctorsList />
       </div>
     </div>
   );

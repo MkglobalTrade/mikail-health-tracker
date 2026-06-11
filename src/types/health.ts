@@ -7,9 +7,28 @@ export interface HealthProfile {
   documents: { id: string; name: string; type: 'pdf' | 'image'; date: string; category: string }[];
 }
 
-export interface GlucoseData {
-  timestamp: string;
+export interface LabTest {
+  id: string;
+  name: string;
+  value: number;
+  unit: string;
+  date: string;
+  normalMin?: number;
+  normalMax?: number;
+  warningMin?: number;
+  warningMax?: number;
+  status: 'normal' | 'warning' | 'critical';
+  previousValue?: number;
+  previousDate?: string;
+  previousStatus?: 'normal' | 'warning' | 'critical';
+}
+
+export interface GlucoseReading {
+  id: string;
+  timestamp: string; // ISO datetime
   value: number; // mg/dL
+  mealType?: 'fasting' | 'before-meal' | 'after-meal';
+  notes?: string;
 }
 
 export interface Medication {
@@ -22,4 +41,16 @@ export interface Medication {
   endDate: string;
   notes: string;
   remindersActive: boolean;
+}
+
+export interface Doctor {
+  id: string;
+  firstName: string;
+  lastName: string;
+  specialty: string;
+  hospital: string;
+  phone: string;
+  email?: string;
+  address?: string;
+  license?: string;
 }
