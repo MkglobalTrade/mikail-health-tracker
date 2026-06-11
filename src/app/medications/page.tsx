@@ -1,4 +1,4 @@
-import MedicationsSchedule from '@/components/MedicationsSchedule';
+import MedicationManager from '@/components/MedicationManager';
 
 export default function MedicationsPage() {
   return (
@@ -8,7 +8,7 @@ export default function MedicationsPage() {
           <h1 className="text-3xl font-semibold text-slate-900">Medication Management</h1>
           <p className="text-slate-600 mt-2">Track your prescriptions, refills, and reminders in one place.</p>
         </header>
-        <MedicationsSchedule />
+        <MedicationManager />
       </div>
     </main>
   );
