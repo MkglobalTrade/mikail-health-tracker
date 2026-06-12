@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="MK Health">
+<title>MK Health</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ind:#4F46E5;--ind50:#EEF2FF;--ind100:#C7D2FE;
+  --grn:#10B981;--grn50:#ECFDF5;--grn100:#A7F3D0;
+  --yel:#F59E0B;--yel50:#FFFBEB;--yel100:#FDE68A;
+  --red:#EF4444;--red50:#FEF2F2;--red100:#FECACA;
+  --g50:#F9FAFB;--g100:#F3F4F6;--g200:#E5E7EB;
+  --g300:#D1D5DB;--g400:#9CA3AF;--g600:#4B5563;
+  --g800:#1F2937;--g900:#111827;
+}
+html,body{background:var(--g50);min-height:100vh}
+body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',system-ui,sans-serif;color:var(--g900);max-width:430px;margin:0 auto;-webkit-font-smoothing:antialiased}
+input,textarea,select,button{font-family:inherit;font-size:15px;color:var(--g900)}
+button{cursor:pointer;transition:opacity .15s,transform .1s}
+button:active{transform:scale(.97)}
+input,select,textarea{width:100%;background:#fff;border:1px solid var(--g200);border-radius:8px;padding:11px 13px;outline:none;transition:border-color .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--ind)}
+::-webkit-scrollbar{display:none}
+*{-webkit-tap-highlight-color:transparent}
+@keyframes pulse{0%,100%{opacity:.2;transform:scale(.75)}50%{opacity:1;transform:scale(1.2)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.spin{animation:spin 1s linear infinite}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script>
+'use strict';
+const {useState,useEffect,useRef,useCallback,useMemo}=React;
+const h=React.createElement;
+
+// ─── DATA ────────────────────────────────────────────────────────────────────
+const LABS=[
+  {key:'hba1c',        label:'HbA1c',            unit:'%',      cat:'Diabetes',     hi:6.5, cHi:8},
+  {key:'glucose',      label:'Glucose',           unit:'mg/dl',  cat:'Diabetes',     lo:70,  hi:99,  cHi:200},
+  {key:'creatinine',   label:'Creatinine',        unit:'mg/dl',  cat:'Kidneys',      hi:1.18,cHi:2},
+  {key:'egfr',         label:'eGFR',              unit:'ml/min', cat:'Kidneys',      lo:60,  cLo:30},
+  {key:'acr',          label:'ACR',               unit:'mg/g',   cat:'Kidneys',      hi:29,  cHi:300},
+  {key:'bun',          label:'BUN',               unit:'mg/dl',  cat:'Kidneys',      hi:26,  cHi:50},
+  {key:'ldl',          label:'LDL',               unit:'mg/dl',  cat:'Lipids',       hi:99,  cHi:160},
+  {key:'hdl',          label:'HDL',               unit:'mg/dl',  cat:'Lipids',       lo:40,  cLo:35},
+  {key:'triglycerides',label:'Triglycerides',     unit:'mg/dl',  cat:'Lipids',       hi:149, cHi:500},
+  {key:'cholesterol',  label:'Total Cholesterol', unit:'mg/dl',  cat:'Lipids',       hi:199, cHi:300},
+  {key:'hemoglobin',   label:'Hemoglobin',        unit:'g/dL',   cat:'Blood',        lo:13,  hi:16.7,cLo:10},
+  {key:'wbc',          label:'WBC',               unit:'K/uL',   cat:'Blood',        lo:3.6, hi:11.2,cHi:15},
+  {key:'platelets',    label:'Platelets',         unit:'K/uL',   cat:'Blood',        lo:140, hi:440, cLo:100},
+  {key:'sodium',       label:'Sodium',            unit:'mEq/L',  cat:'Electrolytes', lo:136, hi:145},
+  {key:'potassium',    label:'Potassium',         unit:'mEq/L',  cat:'Electrolytes', lo:3.5, hi:5.1, cHi:5.5},
+  {key:'alt',          label:'ALT',               unit:'U/L',    cat:'Liver',        hi:44,  cHi:100},
+  {key:'ast',          label:'AST',               unit:'U/L',    cat:'Liver',        hi:43,  cHi:100},
+  {key:'albumin',      label:'Albumin',           unit:'g/dL',   cat:'Liver',        lo:3.5, hi:5.2},
+  {key:'tsh',          label:'TSH',               unit:'mUI/L',  cat:'Other',        lo:0.4, hi:4.0, cHi:10},
+  {key:'vitamin_d',    label:'Vitamin D',         unit:'ng/mL',  cat:'Other',        lo:30,  hi:100, cLo:10},
+  {key:'uric_acid',    label:'Uric Acid',         unit:'mg/dl',  cat:'Other',        hi:7.0, cHi:9},
+  {key:'ferritin',     label:'Ferritin',          unit:'ng/mL',  cat:'Other',        lo:12,  hi:300},
+  {key:'systolic',     label:'Systolic BP',       unit:'mmHg',   cat:'Vitals',       hi:130, cHi:160},
+  {key:'diastolic',    label:'Diastolic BP',      unit:'mmHg',   cat:'Vitals',       hi:80,  cHi:100},
+  {key:'weight_kg',    label:'Weight',            unit:'kg',     cat:'Vitals'},
+];
+const STELO=[
+  {key:'glucose_fasting',label:'Fasting Glucose', unit:'mg/dl',target:'80–100',hi:100,cHi:140},
+  {key:'glucose_peak',   label:'Peak Post-meal',  unit:'mg/dl',target:'< 140', hi:140,cHi:180},
+  {key:'glucose_avg',    label:'Daily Average',   unit:'mg/dl',target:'< 115', hi:115,cHi:154},
+  {key:'time_in_range',  label:'Time in Range',   unit:'%',    target:'> 70%', lo:70, cLo:50},
+];
+const CAT_ORDER=['Diabetes','Kidneys','Lipids','Vitals','Blood','Electrolytes','Liver','Other'];
+const CAT_C={Diabetes:'#4F46E5',Kidneys:'#0891B2',Lipids:'#DC2626',Blood:'#DB2777',Electrolytes:'#D97706',Liver:'#16A34A',Vitals:'#7C3AED',Other:'#6B7280'};
+
+const MEDS_DEF={
+  day:[
+    {id:'m1', name:'Losartan',           dose:'25 mg',     with:'Breakfast',             note:'Kidney protection · blood pressure',type:'rx'},
+    {id:'m2', name:'Metformin',          dose:'500 mg',    with:'Breakfast',             note:'Diabetes — 1st dose',type:'rx'},
+    {id:'m3', name:'Fenofibrate',        dose:'145 mg',    with:'Lunch with fat',        note:'Triglycerides',type:'rx'},
+    {id:'m4', name:'Vitamin D3 + K2',   dose:'5000 IU',   with:'Breakfast',             note:'',type:'vit'},
+    {id:'m5', name:'CoQ10',             dose:'200 mg',    with:'Breakfast + MCT oil',   note:'Essential with statin',type:'vit'},
+    {id:'m6', name:'Vitamin B12',        dose:'—',         with:'Breakfast',             note:'Metformin depletes B12',type:'vit'},
+    {id:'m7', name:'GTF Chromium',       dose:'200 mcg',   with:'Breakfast',             note:'',type:'vit'},
+    {id:'m8', name:'Ceylon Cinnamon',    dose:'—',         with:'Breakfast',             note:'',type:'vit'},
+    {id:'m9', name:'MCT Oil',            dose:'—',         with:'Coffee / breakfast',    note:'',type:'vit'},
+    {id:'m10',name:'Alpha Lipoic Acid',  dose:'—',         with:'30 min before eating',  note:'Antioxidant · insulin',type:'vit'},
+    {id:'m11',name:'NMN',               dose:'—',         with:'30 min before eating',  note:'NAD+ · longevity',type:'vit'},
+    {id:'m12',name:'Omega-3',           dose:'—',         with:'Lunch',                 note:'Half dose',type:'vit'},
+    {id:'m13',name:'Apple Cider Vinegar',dose:'—',        with:'Before lunch',          note:'',type:'vit'},
+  ],
+  night:[
+    {id:'n1',name:'Atorvastatin',        dose:'40 mg',     with:'Before bed',            note:'Cholesterol — always at night',type:'rx'},
+    {id:'n2',name:'Metformin',           dose:'500 mg',    with:'Dinner',                note:'Diabetes — 2nd dose',type:'rx'},
+    {id:'n3',name:'Magnesium Glycinate', dose:'300–400 mg',with:'Before bed',            note:'Sleep · blood pressure',type:'vit'},
+    {id:'n4',name:'Omega-3',            dose:'—',         with:'Dinner',                note:'2nd half of dose',type:'vit'},
+  ]
+};
+const CONTACTS_DEF=[
+  {id:'c1',specialty:'Primary Care',    name:'',hospital:'',phone:'',notes:''},
+  {id:'c2',specialty:'Nephrologist',    name:'',hospital:'',phone:'',notes:''},
+  {id:'c3',specialty:'Cardiologist',    name:'',hospital:'',phone:'',notes:''},
+  {id:'c4',specialty:'Endocrinologist', name:'',hospital:'',phone:'',notes:''},
+];
+const CHAT_SUGG=[
+  'Explain my ACR and what it means for my kidneys',
+  'Compare August 2025 vs June 2026 labs',
+  'Why is my LDL still high?',
+  'Am I making progress with diabetes?',
+  'What should I prioritize first?',
+  'Is my Losartan dose enough?',
+];
+
+// ─── UTILS ───────────────────────────────────────────────────────────────────
+function gst(f,v){
+  if(v==null||v==='')return'ok';
+  const n=parseFloat(v);if(isNaN(n))return'ok';
+  if((f.cHi&&n>=f.cHi)||(f.cLo!=null&&n<=f.cLo))return'crit';
+  if((f.hi&&n>f.hi)||(f.lo!=null&&n<f.lo))return'warn';
+  return'ok';
+}
+const SC={crit:'#EF4444',warn:'#F59E0B',ok:'#10B981'};
+const SBG={crit:'#FEF2F2',warn:'#FFFBEB',ok:'#ECFDF5'};
+const SBD={crit:'#FECACA',warn:'#FDE68A',ok:'#A7F3D0'};
+const gc=(f,v)=>SC[gst(f,v)];
+const nr=f=>{if(f.lo!=null&&f.hi)return f.lo+'–'+f.hi;if(f.hi)return'<'+f.hi;if(f.lo!=null)return'>'+f.lo;return'';};
+const td=()=>new Date().toISOString().split('T')[0];
+const lsG=(k,fb)=>{try{const d=localStorage.getItem(k);return d?JSON.parse(d):fb;}catch{return fb;}};
+const lsS=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch{}};
+const toB64=f=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(f);});
+const fmtDate=s=>{try{return new Date(s).toLocaleDateString('en',{month:'short',day:'numeric',year:'numeric'});}catch{return s||'';}};
+
+// ─── UI PRIMITIVES ───────────────────────────────────────────────────────────
+const Card=({c,s})=>h('div',{style:{background:'#fff',border:'1px solid #E5E7EB',borderRadius:16,padding:16,marginBottom:12,boxShadow:'0 1px 2px rgba(0,0,0,.04)',...s}},c);
+const Lbl=({t})=>h('label',{style:{fontSize:11,color:'#6B7280',display:'block',marginBottom:4,letterSpacing:.5,textTransform:'uppercase'}},t);
+const Field=({label,children})=>h('div',{style:{marginBottom:12}},h(Lbl,{t:label}),children);
+const Divider=({color})=>h('div',{style:{height:1,background:(color||'#E5E7EB')+'33',margin:'8px 0'}});
+
+function Chip({field,value}){
+  const s=gst(field,value);if(s==='ok')return null;
+  const n=nr(field);
+  return h('span',{style:{display:'inline-block',fontSize:10,fontWeight:600,padding:'2px 7px',borderRadius:20,background:SBG[s],color:SC[s],border:'1px solid '+SBD[s]}},
+    s==='crit'?'Critical':('High'+(n?' · '+n+' '+field.unit:'')));
+}
+function Bar({field,value}){
+  if(!value)return null;
+  const v=parseFloat(value),c=gc(field,v);
+  const ref=field.cHi||(field.hi?field.hi*1.5:field.cLo?field.cLo*.5:100);
+  const pct=Math.min(95,Math.max(5,(v/ref)*100));
+  return h('div',{style:{height:3,background:'#F3F4F6',borderRadius:2,overflow:'hidden',marginTop:5}},
+    h('div',{style:{height:'100%',width:pct+'%',background:c,borderRadius:2,transition:'width .5s'}}));
+}
+function Spark({data,color}){
+  if(!data||data.length<2)return null;
+  const nums=data.map(Number).filter(v=>!isNaN(v));if(nums.length<2)return null;
+  const mn=Math.min(...nums),mx=Math.max(...nums),rng=mx-mn||1;
+  const W=64,H=26,p=3;
+  const pts=nums.map((v,i)=>((i/(nums.length-1))*(W-p*2)+p)+','+(H-p-((v-mn)/rng)*(H-p*2))).join(' ');
+  const last=pts.trim().split(' ').pop().split(',');
+  const tr=nums[nums.length-1]-nums[0];
+  const tc=tr>rng*.05?'#EF4444':tr<-rng*.05?'#10B981':'#9CA3AF';
+  return h('div',{style:{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:2,flexShrink:0}},
+    h('svg',{width:W,height:H,style:{display:'block'}},
+      h('polyline',{points:pts,fill:'none',stroke:color,strokeWidth:'2',strokeLinejoin:'round',opacity:'.75'}),
+      h('circle',{cx:parseFloat(last[0]),cy:parseFloat(last[1]),r:'3',fill:color})),
+    h('span',{style:{fontSize:9,fontWeight:600,color:tc}},(tr>0?'↑':tr<0?'↓':'→')+' '+Math.abs(parseFloat(tr.toFixed(1)))));
+}
+function Toast({msg}){
+  if(!msg)return null;
+  return h('div',{style:{position:'fixed',top:80,left:'50%',transform:'translateX(-50%)',background:'#10B981',color:'#fff',borderRadius:10,padding:'10px 20px',fontSize:13,fontWeight:600,zIndex:500,boxShadow:'0 4px 12px rgba(0,0,0,.15)',whiteSpace:'nowrap',pointerEvents:'none',animation:'fadein .2s'}},msg);
+}
+function Header({title,subtitle,right}){
+  return h('div',{style:{padding:'18px 18px 14px',background:'#fff',borderBottom:'1px solid #E5E7EB',position:'sticky',top:0,zIndex:50,boxShadow:'0 1px 3px rgba(0,0,0,.06)'}},
+    h('div',{style:{fontSize:9,color:'#4F46E5',letterSpacing:2.5,textTransform:'uppercase',fontWeight:700,marginBottom:4}},'HEALTH MONITOR'),
+    h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center'}},
+      h('div',null,
+        h('div',{style:{fontSize:21,fontWeight:700,color:'#111827',letterSpacing:'-.4px'}},title),
+        subtitle&&h('div',{style:{fontSize:12,color:'#9CA3AF',marginTop:2}},subtitle)),
+      right));
+}
+function Nav({tab,setTab}){
+  const items=[{id:'home',l:'Home',i:'⌂'},{id:'upload',l:'Upload',i:'↑'},{id:'meds',l:'Meds',i:'⊕'},{id:'news',l:'News',i:'◎'},{id:'history',l:'History',i:'≡'},{id:'chat',l:'AI Chat',i:'✦'}];
+  return h('div',{style:{position:'fixed',bottom:0,left:'50%',transform:'translateX(-50%)',width:'100%',maxWidth:430,background:'#fff',borderTop:'1px solid #E5E7EB',display:'flex',zIndex:100,paddingBottom:'env(safe-area-inset-bottom)',boxShadow:'0 -1px 6px rgba(0,0,0,.06)'}},
+    items.map(t=>h('button',{key:t.id,onClick:()=>setTab(t.id),style:{flex:1,padding:'9px 2px 10px',background:'none',border:'none',borderTop:'2px solid '+(tab===t.id?'#4F46E5':'transparent'),color:tab===t.id?'#4F46E5':'#9CA3AF',display:'flex',flexDirection:'column',alignItems:'center',gap:2}},
+      h('span',{style:{fontSize:17,lineHeight:1}},t.i),
+      h('span',{style:{fontSize:8,fontWeight:tab===t.id?700:400,letterSpacing:.5,textTransform:'uppercase'}},t.l))));
+}
+
+// ─── HOME ────────────────────────────────────────────────────────────────────
+function TrendChart({labs,stelo}){
+  const [sel,setSel]=useState('hba1c');
+  const allF=[...LABS,...STELO];
+  const field=allF.find(f=>f.key===sel);
+  const sKeys=['glucose_fasting','glucose_peak','glucose_avg','time_in_range'];
+  const src=sKeys.includes(sel)?stelo:labs;
+  const data=[...src].reverse().filter(e=>e[sel]!=null).map(e=>({date:e.date,val:parseFloat(e[sel])}));
+  const available=allF.filter(f=>{const s=sKeys.includes(f.key)?stelo:labs;return s.some(e=>e[f.key]!=null);});
+  if(!available.length)return null;
+  const vals=data.map(d=>d.val);
+  const mn=vals.length?Math.min(...vals):0,mx=vals.length?Math.max(...vals):100,rng=mx-mn||1;
+  const W=280,H=100,WP=28,TP=12,BP=20;
+  const color=field?(CAT_C[field.cat]||'#4F46E5'):'#4F46E5';
+  const pts=data.map((d,i)=>({x:WP+(i/Math.max(data.length-1,1))*(W-WP*2),y:TP+(1-(d.val-mn)/rng)*(H-TP-BP),d}));
+  return h(Card,null,
+    h('div',{style:{fontSize:12,fontWeight:600,color:'#374151',marginBottom:10}},'Trend analysis'),
+    h('div',{style:{display:'flex',flexWrap:'wrap',gap:5,marginBottom:12}},
+      available.slice(0,8).map(f=>h('button',{key:f.key,onClick:()=>setSel(f.key),style:{padding:'3px 10px',borderRadius:20,fontSize:10,fontWeight:500,border:'1px solid '+(sel===f.key?(CAT_C[f.cat]||'#4F46E5'):'#E5E7EB'),background:sel===f.key?(CAT_C[f.cat]||'#4F46E5'):'#fff',color:sel===f.key?'#fff':'#6B7280'}},f.label))),
+    data.length<2
+      ?h('div',{style:{textAlign:'center',padding:20,color:'#9CA3AF',fontSize:12}},'Need 2+ data points for '+(field&&field.label))
+      :h('svg',{width:'100%',viewBox:'0 0 '+W+' '+H,style:{display:'block'}},
+        field&&field.hi&&h('line',{x1:WP,x2:W-WP,y1:TP+(1-(field.hi-mn)/rng)*(H-TP-BP),y2:TP+(1-(field.hi-mn)/rng)*(H-TP-BP),stroke:'#E5E7EB',strokeWidth:'1',strokeDasharray:'4,3'}),
+        h('polyline',{points:pts.map(p=>p.x+','+p.y).join(' '),fill:'none',stroke:color,strokeWidth:'2.5',strokeLinejoin:'round',strokeLinecap:'round'}),
+        pts.map((p,i)=>h('g',{key:i},
+          h('circle',{cx:p.x,cy:p.y,r:'4',fill:'#fff',stroke:color,strokeWidth:'2'}),
+          h('text',{x:p.x,y:H-4,textAnchor:'middle',fontSize:'8',fill:'#9CA3AF'},p.d.date&&p.d.date.slice(5))))),
+    data.length>=2&&h('div',{style:{display:'flex',gap:8,marginTop:10,paddingTop:10,borderTop:'1px solid #F3F4F6'}},
+      [{l:'First',v:data[0].val,bg:'#F9FAFB',tc:'#374151'},{l:'Latest',v:data[data.length-1].val,bg:'#ECFDF5',tc:gc(field,data[data.length-1].val)}].map(x=>
+        h('div',{key:x.l,style:{flex:1,background:x.bg,borderRadius:10,padding:'8px 10px'}},
+          h('div',{style:{fontSize:9,color:'#9CA3AF',marginBottom:2}},x.l.toUpperCase()),
+          h('div',{style:{fontSize:15,fontWeight:600,color:x.tc}},x.v))),
+      h('div',{style:{flex:1,borderRadius:10,padding:'8px 10px',background:data[data.length-1].val<data[0].val?'#ECFDF5':'#FEF2F2'}},
+        h('div',{style:{fontSize:9,color:'#9CA3AF',marginBottom:2}},'CHANGE'),
+        h('div',{style:{fontSize:15,fontWeight:600,color:data[data.length-1].val<data[0].val?'#10B981':'#EF4444'}},
+          (data[data.length-1].val-data[0].val>0?'+':'')+(data[data.length-1].val-data[0].val).toFixed(1)))));
+}
+
+function HomeScreen({labs,stelo}){
+  const L=labs[0]||{},S=stelo[0]||{};
+  const crits=LABS.filter(f=>L[f.key]&&gst(f,L[f.key])==='crit');
+  const hist=key=>[...labs].reverse().filter(l=>l[key]!=null).map(l=>l[key]);
+  const sHist=key=>[...stelo].reverse().filter(s=>s[key]!=null).map(s=>s[key]);
+  if(!labs.length&&!stelo.length)return h('div',{style:{textAlign:'center',padding:'72px 24px'}},
+    h('div',{style:{fontSize:52,marginBottom:16,opacity:.1}},'🩺'),
+    h('div',{style:{fontSize:17,fontWeight:600,color:'#4B5563',marginBottom:8}},'No data yet'),
+    h('div',{style:{fontSize:13,color:'#9CA3AF',lineHeight:1.7}},'Go to ',h('span',{style:{color:'#4F46E5',fontWeight:600}},'Upload'),' to add your first results.',h('br'),'Albanian · English · Turkish · Spanish supported.'));
+  return h('div',{style:{padding:'16px 16px 0'}},
+    crits.length>0&&h(Card,{s:{background:'#FEF2F2',border:'1px solid #FECACA'}},
+      h('div',{style:{fontSize:11,fontWeight:700,color:'#DC2626',letterSpacing:1,marginBottom:10}},'CRITICAL VALUES'),
+      crits.map(f=>h('div',{key:f.key,style:{display:'flex',justifyContent:'space-between',padding:'5px 0',borderBottom:'1px solid #FEE2E2'}},
+        h('span',{style:{fontSize:13,color:'#374151'}},f.label),
+        h('span',{style:{fontSize:14,fontWeight:700,color:'#DC2626'}},L[f.key],' ',h('span',{style:{fontSize:10,opacity:.6}},f.unit))))),
+    CAT_ORDER.map(cat=>{
+      const fields=LABS.filter(f=>f.cat===cat&&L[f.key]!=null);if(!fields.length)return null;
+      const cc=CAT_C[cat]||'#6B7280';
+      return h(Card,{key:cat},
+        h('div',{style:{fontSize:10,fontWeight:700,color:cc,letterSpacing:1.5,textTransform:'uppercase',marginBottom:12,paddingBottom:8,borderBottom:'1px solid '+cc+'22'}},cat),
+        fields.map(f=>{
+          const v=L[f.key],s=gst(f,v),sc=SC[s],hh=hist(f.key);
+          return h('div',{key:f.key,style:{display:'flex',alignItems:'center',padding:'9px 0',borderBottom:'1px solid #F9FAFB',gap:12}},
+            h('div',{style:{flex:1,minWidth:0}},
+              h('div',{style:{display:'flex',alignItems:'center',gap:7,marginBottom:3,flexWrap:'wrap'}},
+                h('span',{style:{fontSize:13,color:'#4B5563',fontWeight:500}},f.label),
+                h(Chip,{field:f,value:v})),
+              h('div',null,h('span',{style:{fontSize:20,fontWeight:600,color:sc}},v),h('span',{style:{fontSize:10,color:'#9CA3AF',marginLeft:3}},f.unit)),
+              h(Bar,{field:f,value:v})),
+            hh.length>1&&h(Spark,{data:hh,color:cc}));
+        }),
+        L.date&&h('div',{style:{fontSize:10,color:'#D1D5DB',marginTop:8,textAlign:'right'}},'Date: '+L.date));
+    }),
+    stelo.length>0&&h(Card,null,
+      h('div',{style:{fontSize:10,fontWeight:700,color:'#7C3AED',letterSpacing:1.5,textTransform:'uppercase',marginBottom:12,paddingBottom:8,borderBottom:'1px solid #7C3AED22'}},'Stelo CGM — Latest'),
+      h('div',{style:{fontSize:11,color:'#9CA3AF',marginBottom:8}},'📅 '+S.date),
+      STELO.map(f=>{
+        const v=S[f.key];if(!v)return null;
+        const s=gst(f,v),sc=SC[s],sh=sHist(f.key);
+        return h('div',{key:f.key,style:{display:'flex',alignItems:'center',padding:'8px 0',borderBottom:'1px solid #F9FAFB',gap:12}},
+          h('div',{style:{flex:1}},
+            h('div',{style:{display:'flex',alignItems:'center',gap:7,marginBottom:3}},
+              h('span',{style:{fontSize:13,color:'#4B5563',fontWeight:500}},f.label),h(Chip,{field:f,value:v})),
+            h('span',{style:{fontSize:20,fontWeight:600,color:sc}},v),h('span',{style:{fontSize:10,color:'#9CA3AF',marginLeft:3}},f.unit),
+            h('div',{style:{fontSize:10,color:'#9CA3AF',marginTop:1}},'Target: '+f.target),h(Bar,{field:f,value:v})),
+          sh.length>1&&h(Spark,{data:sh,color:'#7C3AED'}));
+      })),
+    h(TrendChart,{labs,stelo}));
+}
+
+// ─── UPLOAD ──────────────────────────────────────────────────────────────────
+function UploadScreen({onLabSaved,onSteloSaved}){
+  const [phase,setPhase]=useState('idle');
+  const [msg,setMsg]=useState('');
+  const [result,setResult]=useState(null);
+  const [sForm,setSForm]=useState({date:td()});
+  const [saved,setSaved]=useState(false);
+  const ref=useRef();
+  const run=async file=>{
+    setPhase('loading');setResult(null);
+    const ext=file.name.split('.').pop().toLowerCase();
+    try{
+      let body={};
+      if(['jpg','jpeg','png','webp','heic','heif'].includes(ext)){setMsg('Analyzing image...');body={imageData:await toB64(file),imageMime:ext==='png'?'image/png':'image/jpeg'};}
+      else if(ext==='pdf'){setMsg('Reading PDF...');body={imageData:await toB64(file),imageMime:'application/pdf'};}
+      else if(['txt','csv'].includes(ext)){setMsg('Reading file...');body={text:await file.text()};}
+      else throw new Error('Supported: JPG, PNG, PDF, TXT, CSV');
+      setMsg('Claude analyzing...');
+      const r=await fetch('/api/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      const j=await r.json();
+      if(!j.ok)throw new Error(j.error);
+      setPhase('done');setResult(j.data);
+      onLabSaved({id:Date.now(),date:j.data.date||td(),src:'upload',alerts:j.data.alerts||[],summary:j.data.summary||'',...j.data.values});
+    }catch(e){setPhase('error');setMsg(e.message);}
+  };
+  const saveSte=()=>{
+    onSteloSaved({id:Date.now(),date:sForm.date||td(),src:'manual',...sForm});
+    setSaved(true);setTimeout(()=>setSaved(false),2000);setSForm({date:td()});
+  };
+  const bc=phase==='done'?'#10B981':phase==='error'?'#EF4444':'#E5E7EB';
+  return h('div',{style:{padding:'16px 16px 0'}},
+    h('div',{style:{fontSize:13,color:'#6B7280',marginBottom:16,lineHeight:1.6}},'Take a photo or upload a file — Claude reads Albanian, English, Turkish and Spanish automatically.'),
+    h('div',{onClick:()=>{setPhase('idle');ref.current&&ref.current.click();},
+      onDrop:e=>{e.preventDefault();e.dataTransfer.files[0]&&run(e.dataTransfer.files[0]);},
+      onDragOver:e=>e.preventDefault(),
+      style:{border:'2px dashed '+bc,borderRadius:16,padding:'32px 20px',textAlign:'center',cursor:'pointer',background:'#fff',marginBottom:16}},
+      h('div',{style:{fontSize:38,marginBottom:10}},phase==='loading'?'⏳':phase==='done'?'✓':phase==='error'?'✕':'↑'),
+      h('div',{style:{fontSize:15,fontWeight:600,marginBottom:4,color:phase==='error'?'#EF4444':phase==='done'?'#10B981':'#1F2937'}},
+        phase==='idle'?'Upload your lab result':phase==='loading'?msg:phase==='done'?'Done — tap to upload another':msg),
+      h('div',{style:{fontSize:12,color:'#9CA3AF'}},(phase==='idle'||phase==='done')&&'Photo · PDF · JPG · PNG · TXT · CSV'),
+      phase==='loading'&&h('div',{style:{display:'flex',justifyContent:'center',gap:6,marginTop:12}},
+        [0,1,2].map(i=>h('div',{key:i,style:{width:7,height:7,borderRadius:'50%',background:'#4F46E5',animation:'pulse 1.1s ease-in-out '+(i*.18)+'s infinite'}})))),
+    h('input',{ref,type:'file',style:{display:'none'},accept:'.jpg,.jpeg,.png,.pdf,.txt,.csv,.heic,.heif,.webp',onChange:e=>e.target.files&&e.target.files[0]&&run(e.target.files[0])}),
+    result&&h('div',{style:{background:'#F0FDF4',border:'1px solid #A7F3D0',borderRadius:14,padding:16,marginBottom:16}},
+      h('div',{style:{fontSize:11,fontWeight:700,color:'#065F46',letterSpacing:1.5,marginBottom:10}},'CLAUDE EXTRACTED'),
+      result.date&&h('div',{style:{fontSize:12,color:'#6B7280',marginBottom:8}},'Date: '+result.date),
+      h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:7,marginBottom:10}},
+        [...LABS,...STELO].map(f=>{const v=result.values&&result.values[f.key];if(!v)return null;
+          return h('div',{key:f.key,style:{background:'#fff',borderRadius:10,padding:'7px 11px',borderLeft:'3px solid '+gc(f,v)}},
+            h('div',{style:{fontSize:10,color:'#9CA3AF',marginBottom:2}},f.label),
+            h('div',{style:{fontSize:14,fontWeight:600,color:gc(f,v)}},v,' ',h('span',{style:{fontSize:9,opacity:.5}},f.unit)));})),
+      result.alerts&&result.alerts.map((a,i)=>h('div',{key:i,style:{fontSize:11,color:'#DC2626',padding:'3px 0'}},'⚠ '+a)),
+      result.summary&&h('div',{style:{fontSize:12,color:'#374151',marginTop:8,lineHeight:1.6,fontStyle:'italic'}},result.summary)),
+    h('div',{style:{marginTop:24,paddingTop:20,borderTop:'1px solid #E5E7EB'}},
+      h('div',{style:{fontSize:15,fontWeight:700,color:'#111827',marginBottom:4}},'Stelo CGM Entry'),
+      h('div',{style:{fontSize:12,color:'#6B7280',marginBottom:14}},'Log your daily CGM readings.'),
+      h(Card,null,
+        h(Field,{label:'Date'},h('input',{type:'date',value:sForm.date||'',onChange:e=>setSForm(p=>({...p,date:e.target.value}))})),
+        h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}},
+          [['glucose_fasting','Fasting · 80–100'],['glucose_peak','Peak · <140'],['glucose_avg','Average · <115'],['time_in_range','In range · >70%']].map(([k,lbl])=>
+            h(Field,{key:k,label:lbl},h('input',{type:'number',step:'.1',placeholder:'value',value:sForm[k]||'',onChange:e=>setSForm(p=>({...p,[k]:e.target.value}))})))),
+        h(Field,{label:'How did you feel?'},h('select',{value:sForm.feeling||'',onChange:e=>setSForm(p=>({...p,feeling:e.target.value}))},
+          h('option',{value:''},'— select —'),['😴 Tired','😐 Normal','💪 Good','🤕 Unwell'].map(o=>h('option',{key:o},o)))),
+        h(Field,{label:'Notes'},h('textarea',{value:sForm.notes||'',onChange:e=>setSForm(p=>({...p,notes:e.target.value})),placeholder:'What you ate, exercise, symptoms...',style:{height:64,resize:'none'}})),
+        h('button',{onClick:saveSte,style:{width:'100%',background:'#7C3AED',border:'none',borderRadius:12,padding:13,color:'#fff',fontSize:14,fontWeight:600,marginTop:8}},saved?'✓ Saved':'Save Stelo Entry'))));
+}
+
+// ─── MEDS ────────────────────────────────────────────────────────────────────
+function MedsScreen(){
+  const [meds,setMeds]=useState({day:[],night:[]});
+  const [checks,setChecks]=useState({});
+  const [view,setView]=useState('day');
+  const [modal,setModal]=useState(null);
+  const [form,setForm]=useState({});
+  useEffect(()=>{
+    setMeds(lsG('mk_meds2',MEDS_DEF));
+    const td2=new Date().toDateString();
+    if(lsG('mk_chkdate','')!==td2){lsS('mk_chkdate',td2);lsS('mk_chks',{});}
+    setChecks(lsG('mk_chks',{}));
+  },[]);
+  const saveMeds=d=>{lsS('mk_meds2',d);setMeds(d);};
+  const saveCh=c=>{lsS('mk_chks',c);setChecks(c);};
+  const toggle=id=>saveCh({...checks,[id]:!checks[id]});
+  const all=[...(meds.day||[]),...(meds.night||[])];
+  const done=all.filter(m=>checks[m.id]).length;
+  const pct=all.length?Math.round((done/all.length)*100):0;
+  const cur=meds[view]||[];
+  const openAdd=()=>{setForm({name:'',dose:'',with:'',note:'',type:'rx',time:view});setModal('add');};
+  const openEdit=m=>{setForm({...m,time:view});setModal('edit');};
+  const saveMed=()=>{
+    if(!(form.name&&form.name.trim()))return;
+    const t=form.time||view,other=t==='day'?'night':'day';
+    const u={...meds};
+    if(modal==='edit'){
+      const inT=(u[t]||[]).some(m=>m.id===form.id);
+      u[t]=inT?(u[t]||[]).map(m=>m.id===form.id?{...form}:m):[...(u[t]||[]),{...form}];
+      u[other]=(u[other]||[]).filter(m=>m.id!==form.id);
+    }else{u[t]=[...(u[t]||[]),{...form,id:'u'+Date.now()}];}
+    saveMeds(u);setModal(null);
+  };
+  const delMed=(id,t)=>saveMeds({...meds,[t]:(meds[t]||[]).filter(m=>m.id!==id)});
+  const ring=t=>{
+    const items=meds[t]||[],d=items.filter(m=>checks[m.id]).length,p=items.length?Math.round((d/items.length)*100):0;
+    const r=10,circ=2*Math.PI*r,dash=(p/100)*circ,c=p===100?'#10B981':'#4F46E5';
+    return h('svg',{width:24,height:24,style:{transform:'rotate(-90deg)'}},
+      h('circle',{cx:12,cy:12,r,fill:'none',stroke:'#E5E7EB',strokeWidth:'2.5'}),
+      h('circle',{cx:12,cy:12,r,fill:'none',stroke:c,strokeWidth:'2.5',strokeDasharray:dash+' '+circ,strokeLinecap:'round'}));
+  };
+  const MedItem=({m,isLast})=>h('div',{style:{display:'flex',alignItems:'flex-start',gap:12,padding:'12px 16px',borderBottom:isLast?'none':'1px solid #F9FAFB',background:checks[m.id]?'#FAFAFA':'#fff'}},
+    h('div',{onClick:()=>toggle(m.id),style:{width:22,height:22,borderRadius:7,flexShrink:0,marginTop:1,background:checks[m.id]?'#10B981':'transparent',border:'2px solid '+(checks[m.id]?'#10B981':'#D1D5DB'),display:'flex',alignItems:'center',justifyContent:'center',transition:'all .15s',cursor:'pointer'}},
+      checks[m.id]&&h('span',{style:{color:'#fff',fontSize:13,fontWeight:700,lineHeight:1}},'✓')),
+    h('div',{style:{flex:1,cursor:'pointer'},onClick:()=>toggle(m.id)},
+      h('div',{style:{display:'flex',alignItems:'center',gap:6,flexWrap:'wrap',marginBottom:2}},
+        h('span',{style:{fontSize:14,fontWeight:600,color:checks[m.id]?'#9CA3AF':'#1F2937',textDecoration:checks[m.id]?'line-through':'none'}},m.name),
+        m.dose&&m.dose!=='—'&&h('span',{style:{fontSize:10,padding:'1px 7px',borderRadius:20,background:'#EEF2FF',color:'#3730A3',border:'1px solid #C7D2FE',fontWeight:500}},m.dose),
+        h('span',{style:{fontSize:9,padding:'1px 6px',borderRadius:20,background:m.type==='rx'?'#EEF2FF':'#F5F3FF',color:m.type==='rx'?'#4338CA':'#6D28D9',fontWeight:600}},m.type==='rx'?'Rx':'Vit')),
+      m.with&&h('div',{style:{fontSize:11,color:'#9CA3AF'}},'With '+m.with),
+      m.note&&h('div',{style:{fontSize:10,color:m.note.includes('⚠')?'#D97706':'#9CA3AF'}},m.note)),
+    h('button',{onClick:()=>openEdit(m),style:{background:'none',border:'none',color:'#D1D5DB',fontSize:17,padding:'2px 4px',flexShrink:0}},'✎'));
+  return h('div',{style:{padding:'16px 16px 0'}},
+    h(Card,null,
+      h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}},
+        h('div',null,h('div',{style:{fontSize:14,fontWeight:600,color:'#1F2937'}},"Today's progress"),h('div',{style:{fontSize:12,color:'#6B7280',marginTop:2}},done+' of '+all.length+' taken')),
+        h('div',{style:{fontSize:24,fontWeight:700,color:pct===100?'#10B981':'#4F46E5'}},pct+'%')),
+      h('div',{style:{height:6,background:'#F3F4F6',borderRadius:3,overflow:'hidden'}},
+        h('div',{style:{height:'100%',width:pct+'%',background:pct===100?'#10B981':'#4F46E5',borderRadius:3,transition:'width .4s'}})),
+      pct===100&&h('div',{style:{fontSize:12,color:'#10B981',marginTop:6,fontWeight:600,textAlign:'center'}},'✓ All done for today')),
+    h('div',{style:{display:'flex',background:'#fff',borderRadius:14,border:'1px solid #E5E7EB',overflow:'hidden',marginBottom:14}},
+      ['day','night'].map(t=>h('button',{key:t,onClick:()=>setView(t),style:{flex:1,padding:'12px 8px',border:'none',cursor:'pointer',background:view===t?'#EEF2FF':'transparent',borderBottom:'2px solid '+(view===t?'#4F46E5':'transparent'),display:'flex',flexDirection:'column',alignItems:'center',gap:4}},
+        h('div',{style:{display:'flex',alignItems:'center',gap:8}},ring(t),h('span',{style:{fontSize:14,fontWeight:view===t?600:400,color:view===t?'#4F46E5':'#6B7280'}},t==='day'?'🌅 Day':'🌙 Night')),
+        h('span',{style:{fontSize:11,color:'#9CA3AF'}},(meds[t]||[]).filter(m=>checks[m.id]).length+'/'+(meds[t]||[]).length+' taken')))),
+    cur.filter(m=>m.type==='rx').length>0&&h('div',{style:{marginBottom:12}},
+      h('div',{style:{fontSize:9,fontWeight:700,letterSpacing:1.5,textTransform:'uppercase',color:'#9CA3AF',marginBottom:7}},'Prescribed'),
+      h('div',{style:{background:'#fff',borderRadius:14,border:'1px solid #E5E7EB',overflow:'hidden'}},
+        cur.filter(m=>m.type==='rx').map((m,i,arr)=>h(MedItem,{key:m.id,m,isLast:i===arr.length-1})))),
+    cur.filter(m=>m.type==='vit').length>0&&h('div',{style:{marginBottom:12}},
+      h('div',{style:{fontSize:9,fontWeight:700,letterSpacing:1.5,textTransform:'uppercase',color:'#9CA3AF',marginBottom:7}},'Vitamins & Supplements'),
+      h('div',{style:{background:'#fff',borderRadius:14,border:'1px solid #E5E7EB',overflow:'hidden'}},
+        cur.filter(m=>m.type==='vit').map((m,i,arr)=>h(MedItem,{key:m.id,m,isLast:i===arr.length-1})))),
+    h('button',{onClick:openAdd,style:{width:'100%',background:'transparent',border:'1.5px dashed #C7D2FE',borderRadius:12,padding:11,color:'#4F46E5',fontSize:13,fontWeight:600}},'+ Add '+view+' medication'),
+    modal&&h('div',{style:{position:'fixed',inset:0,background:'rgba(0,0,0,.45)',zIndex:300,display:'flex',alignItems:'flex-end',justifyContent:'center'}},
+      h('div',{style:{background:'#fff',borderRadius:'20px 20px 0 0',padding:'22px 18px 40px',width:'100%',maxWidth:430,maxHeight:'85vh',overflowY:'auto'}},
+        h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}},
+          h('div',{style:{fontSize:17,fontWeight:700}},modal==='edit'?'Edit':'Add medication'),
+          h('button',{onClick:()=>setModal(null),style:{background:'none',border:'none',fontSize:22,color:'#9CA3AF',padding:0}},'✕')),
+        h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:4}},
+          h(Field,{label:'Type'},h('select',{value:form.type||'rx',onChange:e=>setForm(p=>({...p,type:e.target.value}))},h('option',{value:'rx'},'Prescribed'),h('option',{value:'vit'},'Vitamin'))),
+          h(Field,{label:'Time'},h('select',{value:form.time||view,onChange:e=>setForm(p=>({...p,time:e.target.value}))},h('option',{value:'day'},'🌅 Day'),h('option',{value:'night'},'🌙 Night')))),
+        [['name','Name *','e.g. Losartan'],['dose','Dose','e.g. 25 mg'],['with','Take with','e.g. Breakfast'],['note','Note','Purpose...']].map(([k,lbl,ph])=>
+          h(Field,{key:k,label:lbl},h('input',{value:form[k]||'',onChange:e=>setForm(p=>({...p,[k]:e.target.value})),placeholder:ph}))),
+        h('div',{style:{display:'flex',gap:8,marginTop:16}},
+          h('button',{onClick:()=>setModal(null),style:{flex:1,background:'#F9FAFB',border:'1px solid #E5E7EB',borderRadius:12,padding:'13px',color:'#6B7280',fontSize:14,fontWeight:500}},'Cancel'),
+          modal==='edit'&&h('button',{onClick:()=>{delMed(form.id,form.time||view);setModal(null);},style:{background:'#FEF2F2',border:'1px solid #FECACA',borderRadius:12,padding:'13px 16px',color:'#DC2626',fontSize:14,fontWeight:500}},'Delete'),
+          h('button',{onClick:saveMed,style:{flex:2,background:'#4F46E5',border:'none',borderRadius:12,padding:'13px',color:'#fff',fontSize:14,fontWeight:700}},modal==='edit'?'Save':'Add')))));
+}
+
+// ─── NEWS ────────────────────────────────────────────────────────────────────
+function NewsScreen(){
+  const [articles,setArticles]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [filter,setFilter]=useState('all');
+  const [error,setError]=useState('');
+  const [lastUpdate,setLastUpdate]=useState('');
+
+  const load=useCallback(async()=>{
+    setLoading(true);setError('');
+    try{
+      const r=await fetch('/api/news');
+      const j=await r.json();
+      if(!j.ok)throw new Error(j.error||'Failed to load news');
+      setArticles(j.articles||[]);
+      setLastUpdate(j.cached?'Cached · updated every 3h':'Just updated');
+    }catch(e){
+      setError(e.message);
+      setArticles([]);
+    }
+    setLoading(false);
+  },[]);
+
+  useEffect(()=>{load();},[load]);
+
+  const filtered=filter==='all'?articles:articles.filter(a=>a.cat===filter);
+
+  return h('div',{style:{padding:'16px 16px 0'}},
+    h('div',{style:{fontSize:12,color:'#9CA3AF',marginBottom:14,display:'flex',justifyContent:'space-between',alignItems:'center'}},
+      h('span',null,lastUpdate||'Updated every 3 hours'),
+      h('button',{onClick:load,style:{background:'none',border:'none',color:'#4F46E5',fontSize:12,fontWeight:500,cursor:'pointer',padding:0}},'Refresh')),
+
+    h('div',{style:{display:'flex',background:'#fff',border:'1px solid #E5E7EB',borderRadius:12,padding:3,gap:2,marginBottom:16}},
+      [['all','All News'],['diabetes','🩸 Diabetes'],['longevity','⚡ Longevity']].map(([v,l])=>
+        h('button',{key:v,onClick:()=>setFilter(v),style:{flex:1,padding:'8px 4px',border:'none',borderRadius:9,background:filter===v?'#4F46E5':'transparent',color:filter===v?'#fff':'#6B7280',fontSize:11,fontWeight:filter===v?600:400,cursor:'pointer'}},l))),
+
+    loading&&h('div',{style:{textAlign:'center',padding:'48px 20px'}},
+      h('div',{style:{width:32,height:32,border:'3px solid #E5E7EB',borderTopColor:'#4F46E5',borderRadius:'50%',margin:'0 auto 12px',animation:'spin 1s linear infinite'}}),
+      h('div',{style:{fontSize:13,color:'#9CA3AF'}},'Loading latest news...')),
+
+    error&&h('div',{style:{background:'#FEF2F2',border:'1px solid #FECACA',borderRadius:12,padding:16,textAlign:'center',marginBottom:12}},
+      h('div',{style:{fontSize:13,color:'#DC2626',marginBottom:8}},'Could not load news feeds'),
+      h('div',{style:{fontSize:12,color:'#9CA3AF',marginBottom:12}},error),
+      h('button',{onClick:load,style:{background:'#4F46E5',border:'none',borderRadius:8,padding:'8px 16px',color:'#fff',fontSize:13,fontWeight:500,cursor:'pointer'}},'Try again')),
+
+    !loading&&!error&&filtered.length===0&&h('div',{style:{textAlign:'center',padding:'48px 20px',color:'#9CA3AF'}},
+      h('div',{style:{fontSize:36,marginBottom:10,opacity:.2}},'📰'),
+      h('div',{style:{fontSize:13}},'No articles found')),
+
+    !loading&&filtered.map((a,i)=>{
+      const isDiabetes=a.cat==='diabetes';
+      const tagColor=isDiabetes?'#4F46E5':'#10B981';
+      const tagBg=isDiabetes?'#EEF2FF':'#ECFDF5';
+      return h('div',{key:i,style:{background:'#fff',border:'1px solid #E5E7EB',borderRadius:14,padding:'14px 16px',marginBottom:10,animation:'fadein .2s ease'}},
+        h('div',{style:{display:'flex',alignItems:'center',gap:8,marginBottom:8}},
+          h('span',{style:{fontSize:10,fontWeight:600,padding:'2px 8px',borderRadius:20,background:tagBg,color:tagColor}},isDiabetes?'Diabetes':'Longevity'),
+          h('span',{style:{fontSize:10,color:'#9CA3AF'}},a.source)),
+        h('a',{href:a.link,target:'_blank',rel:'noopener noreferrer',style:{display:'block',fontSize:14,fontWeight:600,color:'#1F2937',lineHeight:1.4,marginBottom:6,textDecoration:'none'}},a.title),
+        a.desc&&h('div',{style:{fontSize:12,color:'#6B7280',lineHeight:1.5,marginBottom:6}},a.desc.length>150?a.desc.slice(0,150)+'...':a.desc),
+        h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center'}},
+          h('span',{style:{fontSize:10,color:'#9CA3AF'}},a.date?fmtDate(a.date):''),
+          h('a',{href:a.link,target:'_blank',rel:'noopener noreferrer',style:{fontSize:11,color:'#4F46E5',fontWeight:500,textDecoration:'none'}},'Read more →')));
+    }));
+}
+
+// ─── HISTORY ─────────────────────────────────────────────────────────────────
+function HistoryScreen({labs,stelo,onDelLab,onDelStelo}){
+  const [exp,setExp]=useState(null);
+  const byMonth={};
+  [...labs.map(e=>({...e,_t:'lab'})),...stelo.map(e=>({...e,_t:'stelo'}))].forEach(e=>{
+    const m=e.date?e.date.slice(0,7):'Unknown';if(!byMonth[m])byMonth[m]=[];byMonth[m].push(e);
+  });
+  const mname=m=>{if(m==='Unknown')return'Unknown date';const[y,mo]=m.split('-');return new Date(parseInt(y),parseInt(mo)-1).toLocaleString('en',{month:'long',year:'numeric'});};
+  if(!labs.length&&!stelo.length)return h('div',{style:{padding:'16px 16px 0',textAlign:'center',paddingTop:64}},
+    h('div',{style:{fontSize:36,marginBottom:10,opacity:.15}},'📋'),h('div',{style:{fontSize:14,color:'#6B7280'}},'No history yet.'));
+  return h('div',{style:{padding:'16px 16px 0'}},
+    h('div',{style:{fontSize:12,color:'#6B7280',marginBottom:16}},labs.length+' lab results · '+stelo.length+' Stelo entries · by month'),
+    Object.keys(byMonth).sort((a,b)=>b.localeCompare(a)).map(month=>h('div',{key:month,style:{marginBottom:20}},
+      h('div',{style:{fontSize:11,fontWeight:700,color:'#9CA3AF',letterSpacing:1.5,textTransform:'uppercase',marginBottom:10}},mname(month)),
+      byMonth[month].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(entry=>{
+        const isLab=entry._t==='lab',isOpen=exp===entry.id;
+        const labF=isLab?LABS.filter(f=>entry[f.key]!=null):[];
+        const critCt=labF.filter(f=>gst(f,entry[f.key])==='crit').length;
+        return h('div',{key:entry.id,onClick:()=>setExp(isOpen?null:entry.id),style:{background:'#fff',border:'1px solid '+(isOpen?'#C7D2FE':'#E5E7EB'),borderRadius:14,padding:'12px 14px',marginBottom:8,cursor:'pointer'}},
+          h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center'}},
+            h('div',null,
+              h('div',{style:{display:'flex',alignItems:'center',gap:8}},
+                h('span',{style:{fontSize:14,fontWeight:600,color:'#1F2937'}},entry.date),
+                isLab?(critCt>0?h('span',{style:{fontSize:9,fontWeight:700,padding:'2px 7px',borderRadius:20,background:'#FEF2F2',color:'#DC2626',border:'1px solid #FECACA'}},critCt+' critical'):h('span',{style:{fontSize:9,fontWeight:600,padding:'2px 7px',borderRadius:20,background:'#EEF2FF',color:'#4338CA',border:'1px solid #C7D2FE'}},'Lab')):h('span',{style:{fontSize:9,fontWeight:600,padding:'2px 7px',borderRadius:20,background:'#EDE9FE',color:'#6D28D9',border:'1px solid #DDD6FE'}},'Stelo')),
+              h('div',{style:{fontSize:10,color:'#9CA3AF',marginTop:2}},entry.src==='upload'?'Uploaded · Claude':'Manual',(!isLab&&entry.feeling)?' · '+entry.feeling:'')),
+            h('div',{style:{display:'flex',gap:10,alignItems:'center'}},
+              h('span',{style:{fontSize:12,color:'#D1D5DB'}},isOpen?'▲':'▼'),
+              h('button',{onClick:e=>{e.stopPropagation();isLab?onDelLab(entry.id):onDelStelo(entry.id);},style:{background:'none',border:'none',color:'#D1D5DB',fontSize:16,padding:0}},'✕'))),
+          isOpen&&h('div',{style:{marginTop:14,paddingTop:12,borderTop:'1px solid #F3F4F6'}},
+            isLab?h('div',null,
+              CAT_ORDER.map(cat=>{
+                const fields=LABS.filter(f=>f.cat===cat&&entry[f.key]!=null);if(!fields.length)return null;
+                return h('div',{key:cat,style:{marginBottom:12}},
+                  h('div',{style:{fontSize:9,fontWeight:700,color:CAT_C[cat]||'#6B7280',letterSpacing:1,textTransform:'uppercase',marginBottom:7}},cat),
+                  h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6}},
+                    fields.map(f=>{const s=gst(f,entry[f.key]);return h('div',{key:f.key,style:{background:SBG[s],borderRadius:10,padding:'7px 11px',borderLeft:'3px solid '+SC[s]}},
+                      h('div',{style:{fontSize:9,color:'#9CA3AF',marginBottom:2}},f.label),
+                      h('div',{style:{fontSize:14,fontWeight:600,color:SC[s]}},entry[f.key],' ',h('span',{style:{fontSize:8,opacity:.5}},f.unit)));})));
+              }),
+              entry.alerts&&entry.alerts.map((a,i)=>h('div',{key:i,style:{fontSize:11,color:'#DC2626',padding:'3px 0'}},'⚠ '+a)),
+              entry.summary&&h('div',{style:{fontSize:11,color:'#6B7280',marginTop:8,fontStyle:'italic',lineHeight:1.6}},entry.summary))
+            :h('div',null,
+              h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6,marginBottom:8}},
+                STELO.map(f=>{if(!entry[f.key])return null;const s=gst(f,entry[f.key]);return h('div',{key:f.key,style:{background:SBG[s],borderRadius:10,padding:'7px 11px',borderLeft:'3px solid '+SC[s]}},
+                  h('div',{style:{fontSize:9,color:'#9CA3AF',marginBottom:2}},f.label),h('div',{style:{fontSize:14,fontWeight:600,color:SC[s]}},entry[f.key],' ',h('span',{style:{fontSize:8,opacity:.5}},f.unit)));})),
+              entry.notes&&h('div',{style:{fontSize:11,color:'#9CA3AF',fontStyle:'italic'}},entry.notes))));
+      }))));
+}
+
+// ─── CHAT ────────────────────────────────────────────────────────────────────
+function ChatScreen({labs,stelo}){
+  const [msgs,setMsgs]=useState([{role:'assistant',content:'Hello Mikail. I have access to all your lab results and health history. Ask me anything — I can explain your values, compare results over time, or help you understand what to prioritize.'}]);
+  const [input,setInput]=useState('');
+  const [loading,setLoading]=useState(false);
+  const bottomRef=useRef();
+  useEffect(()=>{bottomRef.current&&bottomRef.current.scrollIntoView({behavior:'smooth'});},[msgs]);
+  const buildCtx=()=>{
+    if(!labs.length&&!stelo.length)return'No lab data yet.';
+    let ctx='PATIENT: Mikail Kocak, 46, Los Angeles CA.\n\n';
+    if(labs.length){ctx+='LABS:\n';labs.slice(0,5).forEach(l=>{const v=LABS.filter(f=>l[f.key]!=null).map(f=>f.label+': '+l[f.key]+' '+f.unit).join(', ');if(v)ctx+='• '+l.date+': '+v+'\n';});}
+    if(stelo.length){ctx+='\nSTELO:\n';stelo.slice(0,7).forEach(s=>{const v=STELO.filter(f=>s[f.key]!=null).map(f=>f.label+': '+s[f.key]+' '+f.unit).join(', ');if(v)ctx+='• '+s.date+': '+v+(s.feeling?' · '+s.feeling:'')+'\n';});}
+    return ctx;
+  };
+  const send=async text=>{
+    const msg=(text||input).trim();if(!msg||loading)return;
+    setInput('');
+    const updated=[...msgs,{role:'user',content:msg}];
+    setMsgs(updated);setLoading(true);
+    try{
+      const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:updated,context:buildCtx()})});
+      const j=await r.json();
+      setMsgs(prev=>[...prev,{role:'assistant',content:j.ok?j.message:'Error: '+j.error}]);
+    }catch{setMsgs(prev=>[...prev,{role:'assistant',content:'Connection error. Try again.'}]);}
+    setLoading(false);
+  };
+  return h('div',{style:{display:'flex',flexDirection:'column',height:'calc(100vh - 160px)'}},
+    h('div',{style:{flex:1,overflowY:'auto',padding:'16px 16px 8px'}},
+      msgs.map((m,i)=>h('div',{key:i,style:{marginBottom:12,display:'flex',flexDirection:'column',alignItems:m.role==='user'?'flex-end':'flex-start'}},
+        m.role==='assistant'&&h('div',{style:{fontSize:9,color:'#4F46E5',fontWeight:700,letterSpacing:1,marginBottom:4}},'MK HEALTH AI'),
+        h('div',{style:{maxWidth:'85%',padding:'10px 13px',borderRadius:m.role==='user'?'14px 14px 3px 14px':'14px 14px 14px 3px',background:m.role==='user'?'#4F46E5':'#F9FAFB',color:m.role==='user'?'#fff':'#1F2937',fontSize:13,lineHeight:1.6,border:m.role==='assistant'?'1px solid #E5E7EB':'none'}},
+          m.content.split('\n').map((line,j,arr)=>h('span',{key:j},line,j<arr.length-1&&h('br')))))),
+      loading&&h('div',{style:{marginBottom:12}},
+        h('div',{style:{fontSize:9,color:'#4F46E5',fontWeight:700,letterSpacing:1,marginBottom:4}},'MK HEALTH AI'),
+        h('div',{style:{padding:'10px 13px',borderRadius:'14px 14px 14px 3px',background:'#F9FAFB',border:'1px solid #E5E7EB',display:'inline-flex',gap:5,alignItems:'center'}},
+          [0,1,2].map(i=>h('div',{key:i,style:{width:6,height:6,borderRadius:'50%',background:'#9CA3AF',animation:'pulse 1.1s ease-in-out '+(i*.18)+'s infinite'}})))),
+      msgs.length===1&&h('div',{style:{marginTop:8}},
+        h('div',{style:{fontSize:11,color:'#9CA3AF',marginBottom:8}},'Suggested questions:'),
+        CHAT_SUGG.map((s,i)=>h('button',{key:i,onClick:()=>send(s),style:{display:'block',width:'100%',textAlign:'left',background:'#fff',border:'1px solid #E5E7EB',borderRadius:10,padding:'9px 12px',marginBottom:6,fontSize:12,color:'#374151',cursor:'pointer'}},s))),
+      h('div',{ref:bottomRef})),
+    h('div',{style:{padding:'8px 16px 16px',background:'#fff',borderTop:'1px solid #E5E7EB'}},
+      h('div',{style:{display:'flex',gap:8,alignItems:'flex-end'}},
+        h('textarea',{value:input,onChange:e=>setInput(e.target.value),onKeyDown:e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}},placeholder:'Ask about your results...',style:{flex:1,background:'#F9FAFB',border:'1px solid #E5E7EB',borderRadius:12,padding:'10px 13px',fontSize:13,resize:'none',height:42,outline:'none',lineHeight:1.4}}),
+        h('button',{onClick:()=>send(),disabled:!input.trim()||loading,style:{width:40,height:40,borderRadius:12,flexShrink:0,background:(input.trim()&&!loading)?'#4F46E5':'#E5E7EB',border:'none',color:'#fff',fontSize:16,display:'flex',alignItems:'center',justifyContent:'center'}},'↑'))));
+}
+
+// ─── APP ─────────────────────────────────────────────────────────────────────
+function App(){
+  const [tab,setTab]=useState('home');
+  const [labs,setLabs]=useState([]);
+  const [stelo,setStelo]=useState([]);
+  const [toast,setToast]=useState('');
+  useEffect(()=>{setLabs(lsG('mk_labs',[]));setStelo(lsG('mk_stelo',[]));},[] );
+  const addLab=e=>{const d=[e,...labs];lsS('mk_labs',d);setLabs(d);flash('✓ Result saved');};
+  const addSte=e=>{const d=[e,...stelo];lsS('mk_stelo',d);setStelo(d);flash('✓ Stelo saved');};
+  const delLab=id=>{const d=labs.filter(l=>l.id!==id);lsS('mk_labs',d);setLabs(d);};
+  const delSte=id=>{const d=stelo.filter(s=>s.id!==id);lsS('mk_stelo',d);setStelo(d);};
+  const flash=msg=>{setToast(msg);setTimeout(()=>setToast(''),1600);};
+  const L=labs[0]||{};
+  const crits=LABS.filter(f=>L[f.key]&&gst(f,L[f.key])==='crit');
+  const badge=crits.length>0?h('div',{style:{background:'#FEF2F2',border:'1px solid #FECACA',borderRadius:8,padding:'4px 10px',fontSize:11,color:'#DC2626',fontWeight:700}},'⚠ '+crits.length+' critical'):null;
+  const headers={
+    home:   {title:'Mikail Kocak',   subtitle:'46 yrs · Los Angeles, CA',right:badge},
+    upload: {title:'Upload Result',  subtitle:'Albanian · English · Turkish · Spanish'},
+    meds:   {title:'Medications',    subtitle:'Day & Night · tap to check off'},
+    news:   {title:'Health News',    subtitle:'Diabetes & longevity · updated every 3h'},
+    history:{title:'History',        subtitle:labs.length+' labs · '+stelo.length+' Stelo entries'},
+    chat:   {title:'AI Health Chat', subtitle:'Ask anything about your results'},
+  };
+  const hp=headers[tab]||headers.home;
+  return h('div',{style:{minHeight:'100vh',paddingBottom:90,background:'#F9FAFB'}},
+    h(Header,{title:hp.title,subtitle:hp.subtitle,right:hp.right}),
+    h(Toast,{msg:toast}),
+    tab==='home'   &&h(HomeScreen,   {labs,stelo}),
+    tab==='upload' &&h(UploadScreen, {onLabSaved:e=>{addLab(e);setTab('home');},onSteloSaved:addSte}),
+    tab==='meds'   &&h(MedsScreen,   null),
+    tab==='news'   &&h(NewsScreen,   null),
+    tab==='history'&&h(HistoryScreen,{labs,stelo,onDelLab:delLab,onDelStelo:delSte}),
+    tab==='chat'   &&h(ChatScreen,   {labs,stelo}),
+    h(Nav,{tab,setTab}));
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(h(App));
+</script>
+</body>
+</html>
