@@ -1,5 +1,5 @@
 import './globals.css'
-export const metadata = { title: 'MK Health', description: 'Personal Health Monitor' }
+export const metadata = { title: 'MK Health', description: 'Personal Health Monitor — Mikail Kocak' }
 export const viewport = { width: 'device-width', initialScale: 1, maximumScale: 1 }
 export default function RootLayout({ children }) {
   return (
