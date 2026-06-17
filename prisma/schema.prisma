@@ -1,0 +1,99 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model LabResult {
+  id          String   @id @default(uuid())
+  title       String
+  category    String
+  date        DateTime
+  fileUrl     String?
+  fileType    String?  // pdf | image
+  rawText     String?  // OCR extracted text
+  parsedData  String?  // JSON string of extracted values
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model SugarReading {
+  id        String   @id @default(uuid())
+  value     Float
+  unit      String   @default("mg/dL")
+  date      DateTime
+  timeOfDay String   // morning, afternoon, evening, night
+  mealType  String?  // fasting, before_meal, after_meal, bedtime
+  notes     String?
+  imageUrl  String?
+  createdAt DateTime @default(now())
+}
+
+model BloodPressure {
+  id        String   @id @default(uuid())
+  systolic  Int
+  diastolic Int
+  pulse     Int?
+  date      DateTime
+  timeOfDay String   // morning, afternoon, evening, night
+  notes     String?
+  createdAt DateTime @default(now())
+}
+
+model Medication {
+  id          String   @id @default(uuid())
+  name        String
+  dosage      String
+  frequency   String   // morning, evening, both
+  startDate   DateTime
+  endDate     DateTime?
+  active      Boolean  @default(true)
+  notes       String?
+  takenToday  Boolean  @default(false)
+  lastTaken   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model MedicationLog {
+  id           String   @id @default(uuid())
+  medicationId String
+  takenAt      DateTime
+  timeOfDay    String   // morning, evening
+  notes        String?
+}
+
+model ChatMessage {
+  id        String   @id @default(uuid())
+  role      String   // user | assistant
+  content   String
+  timestamp DateTime @default(now())
+  sessionId String
+}
+
+model HealthTip {
+  id          String   @id @default(uuid())
+  title       String
+  content     String
+  category    String
+  sourceUrl   String?
+  publishedAt DateTime?
+  createdAt   DateTime @default(now())
+}
+
+model DailySummary {
+  id            String   @id @default(uuid())
+  date          DateTime @unique
+  sugarAvg      Float?
+  sugarMin      Float?
+  sugarMax      Float?
+  bpAvgSystolic Int?
+  bpAvgDiastolic Int?
+  medicationsTaken Boolean @default(false)
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
